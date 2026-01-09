@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Radar Scanner</title>
+    <style>
+        :root {
+            --primary: #4bcffa;
+            --success: #0be881;
+            --warning: #ffa801;
+            --danger: #ff5e57;
+            --dark: #0c2461;
+            --darker: #0a1931;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(45deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .radar-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            font-size: 1.4em;
+            color: var(--primary);
+        }
+
+        .radar-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: radial-gradient(circle at center,
+                rgba(11, 19, 43, 0.9) 0%,
+                rgba(8, 14, 33, 1) 100%);
+            border-radius: 15px;
+            border: 2px solid var(--border);
+            overflow: hidden;
+        }
+
+        .radar-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            border: 1px solid rgba(75, 207, 250, 0.2);
+        }
+
+        .radar-grid::before,
+        .radar-grid::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(75, 207, 250, 0.2);
+        }
+
+        .radar-grid::before { width: 60%; height: 60%; }
+        .radar-grid::after { width: 30%; height: 30%; }
+
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        .radar-line {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--primary),
+                rgba(75, 207, 250, 0.8));
+            transform-origin: left center;
+            animation: radar-sweep 3s linear infinite;
+            z-index: 5;
+        }
+
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .distance-labels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .distance-label {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8em;
+        }
+
+        .device-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            box-shadow: 0 0 15px currentColor;
+            border: 2px solid white;
+        }
+
+        .device-dot:hover {
+            transform: translate(-50%, -50%) scale(1.8);
+            z-index: 100;
+        }
+
+        .device-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--primary);
+            min-width: 250px;
+            z-index: 1000;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .tooltip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .tooltip-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: var(--primary);
+        }
+
+        .tooltip-type {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .tooltip-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .tooltip-label {
+            opacity: 0.7;
+        }
+
+        .tooltip-value {
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 5px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        .device-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .device-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .device-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .device-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .device-item-name {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .device-item-type {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .device-item-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, var(--primary), #0abde3);
+            color: white;
+        }
+
+        .btn-continuous {
+            background: linear-gradient(135deg, var(--success), #05c46b);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, var(--danger), #ff3f34);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .status-bar {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-scanning {
+            background: var(--success);
+            animation: pulse 1s infinite;
+        }
+
+        .status-idle {
+            background: var(--warning);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--success);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 10000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        .notification.warning {
+            background: var(--warning);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 15px;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .connection-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .connected { background: var(--success); }
+        .disconnected { background: var(--warning); }
+
+        .signal-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .signal-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📡 Bluetooth Radar Scanner</h1>
+            <p>Real-time Bluetooth device detection with distance estimation and radar visualization</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="radar-section">
+                <div class="section-title">
+                    <span>📍</span>
+                    <h2>Live Radar View</h2>
+                </div>
+
+                <div class="radar-container" id="radarContainer">
+                    <div class="radar-center"></div>
+                    <div class="radar-grid"></div>
+                    <div class="radar-line"></div>
+
+                    <!-- Distance labels -->
+                    <div class="distance-labels">
+                        <div class="distance-label" style="top: 5%; left: 50%; transform: translateX(-50%);">2m</div>
+                        <div class="distance-label" style="top: 50%; left: 95%; transform: translateX(-100%);">5m</div>
+                        <div class="distance-label" style="top: 95%; left: 50%; transform: translateX(-50%);">10m</div>
+                        <div class="distance-label" style="top: 50%; left: 5%;">15m</div>
+                    </div>
+
+                    <!-- Device dots will be added here -->
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-scan" onclick="scanDevices()">
+                        <span>🔍</span> Scan Now
+                    </button>
+                    <button class="btn btn-continuous" onclick="startContinuousScan()">
+                        <span>🔄</span> Continuous Scan
+                    </button>
+                    <button class="btn btn-stop" onclick="stopContinuousScan()">
+                        <span>⏹️</span> Stop Scan
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="stats-card">
+                    <div class="section-title">
+                        <span>📊</span>
+                        <h2>Statistics</h2>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Devices Found</div>
+                            <div class="stat-value" id="deviceCount">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Connected</div>
+                            <div class="stat-value" id="connectedCount">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Avg Distance</div>
+                            <div class="stat-value" id="avgDistance">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Last Scan</div>
+                            <div class="stat-value" id="lastScanTime">--:--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="section-title">
+                        <span>📱</span>
+                        <h2>Detected Devices</h2>
+                    </div>
+
+                    <div class="device-list" id="deviceList">
+                        <div style="text-align: center; padding: 30px; opacity: 0.5;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">🔍</div>
+                            <p>No devices found yet</p>
+                            <p style="font-size: 0.9em; margin-top: 5px;">Click "Scan Now" to start</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="section-title">
+                        <span>🎯</span>
+                        <h2>Signal Legend</h2>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #0be881;"></div>
+                            <span>Excellent</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #4bcffa;"></div>
+                            <span>Good</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ffa801;"></div>
+                            <span>Fair</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ff5e57;"></div>
+                            <span>Poor</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot status-idle" id="statusDot"></div>
+                <span id="statusText">Ready to scan</span>
+            </div>
+            <div>
+                <span id="systemStatus">System: Checking...</span>
+                <span style="margin: 0 15px;">|</span>
+                <span id="totalScans">Scans: 0</span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="connection-indicator connected"></div>
+                <span>Connected Device</span>
+            </div>
+            <div class="legend-item">
+                <div class="connection-indicator disconnected"></div>
+                <span>Paired Device</span>
+            </div>
+            <div class="legend-item">
+                <span>📍</span>
+                <span>Your Position (Radar Center)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let isScanning = false;
+        let deviceTooltip = null;
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification';
+
+            switch(type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(135deg, #0be881, #05c46b)';
+                    break;
+                case 'warning':
+                    notification.style.background = 'linear-gradient(135deg, #ffa801, #ff9f1a)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(135deg, #ff5e57, #ff3f34)';
+                    break;
+            }
+
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function updateRadar(devices) {
+            const radarContainer = document.getElementById('radarContainer');
+            const deviceList = document.getElementById('deviceList');
+            const deviceCount = document.getElementById('deviceCount');
+            const connectedCount = document.getElementById('connectedCount');
+            const avgDistance = document.getElementById('avgDistance');
+            const lastScanTime = document.getElementById('lastScanTime');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            // Remove existing device dots and tooltips
+            document.querySelectorAll('.device-dot').forEach(dot => dot.remove());
+            if (deviceTooltip) {
+                deviceTooltip.remove();
+                deviceTooltip = null;
+            }
+
+            // Update statistics
+            deviceCount.textContent = devices.length;
+
+            const connectedDevices = devices.filter(d => d.is_connected);
+            connectedCount.textContent = connectedDevices.length;
+
+            const distances = devices.filter(d => d.distance).map(d => d.distance);
+            if (distances.length > 0) {
+                const avg = (distances.reduce((a, b) => a + b) / distances.length).toFixed(1);
+                avgDistance.textContent = avg + 'm';
+            } else {
+                avgDistance.textContent = '-';
+            }
+
+            lastScanTime.textContent = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Update status
+            if (isScanning) {
+                statusDot.className = 'status-dot status-scanning';
+                statusText.textContent = 'Continuous Scanning';
+            } else {
+                statusDot.className = 'status-dot status-idle';
+                statusText.textContent = 'Ready to scan';
+            }
+
+            // Add device dots to radar
+            devices.forEach(device => {
+                const dot = document.createElement('div');
+                dot.className = 'device-dot';
+                dot.dataset.deviceId = device.address;
+
+                // Position on radar
+                dot.style.left = `${device.x}%`;
+                dot.style.top = `${device.y}%`;
+                dot.style.backgroundColor = device.signal_quality.color;
+                dot.style.boxShadow = `0 0 20px ${device.signal_quality.color}`;
+
+                // Add border color for connected devices
+                if (device.is_connected) {
+                    dot.style.borderColor = '#0be881';
+                }
+
+                // Add hover effects
+                dot.addEventListener('mouseenter', (e) => {
+                    showDeviceTooltip(device, e.clientX, e.clientY);
+                    dot.style.transform = `translate(-50%, -50%) scale(1.8)`;
+                });
+
+                dot.addEventListener('mousemove', (e) => {
+                    if (deviceTooltip) {
+                        deviceTooltip.style.left = `${e.clientX + 15}px`;
+                        deviceTooltip.style.top = `${e.clientY + 15}px`;
+                    }
+                });
+
+                dot.addEventListener('mouseleave', () => {
+                    if (deviceTooltip) {
+                        deviceTooltip.remove();
+                        deviceTooltip = null;
+                    }
+                    dot.style.transform = `translate(-50%, -50%)`;
+                });
+
+                // Click to focus
+                dot.addEventListener('click', () => {
+                    showNotification(`Selected: ${device.name}`, 'success');
+                    // You can add more functionality here
+                });
+
+                radarContainer.appendChild(dot);
+            });
+
+            // Update device list
+            if (devices.length === 0) {
+                deviceList.innerHTML = `
+                    <div style="text-align: center; padding: 30px; opacity: 0.5;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">🔍</div>
+                        <p>No Bluetooth devices found</p>
+                        <p style="font-size: 0.9em; margin-top: 5px;">
+                            Make sure Bluetooth is enabled on nearby devices
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            devices.forEach(device => {
+                const signalPercent = Math.min(100, Math.max(0, 100 + device.rssi));
+
+                html += `
+                    <div class="device-item" data-device-id="${device.address}">
+                        <div class="device-item-header">
+                            <div class="device-item-name">${device.name}</div>
+                            <div class="device-item-type">${device.type}</div>
+                        </div>
+                        <div class="device-item-details">
+                            <div>Address: ${device.address}</div>
+                            <div style="text-align: right;">
+                                <span class="connection-indicator ${device.is_connected ? 'connected' : 'disconnected'}"></span>
+                                ${device.is_connected ? 'Connected' : 'Paired'}
+                            </div>
+                            <div>Distance: ${device.distance ? device.distance + 'm' : 'Unknown'}</div>
+                            <div style="text-align: right;">Signal: ${device.signal_quality.level}</div>
+                        </div>
+                        <div class="signal-bar">
+                            <div class="signal-fill" style="width: ${signalPercent}%; background-color: ${device.signal_quality.color};"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            deviceList.innerHTML = html;
+
+            // Add click handlers to device items
+            document.querySelectorAll('.device-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const deviceId = item.dataset.deviceId;
+                    const device = devices.find(d => d.address === deviceId);
+                    if (device) {
+                        showDeviceDetails(device);
+                    }
+                });
+            });
+        }
+
+        function showDeviceTooltip(device, x, y) {
+            if (deviceTooltip) {
+                deviceTooltip.remove();
+            }
+
+            deviceTooltip = document.createElement('div');
+            deviceTooltip.className = 'device-tooltip';
+            deviceTooltip.style.left = `${x + 15}px`;
+            deviceTooltip.style.top = `${y + 15}px`;
+
+            deviceTooltip.innerHTML = `
+                <div class="tooltip-header">
+                    <div class="tooltip-name">${device.name}</div>
+                    <div class="tooltip-type">${device.type}</div>
+                </div>
+                <div class="tooltip-details">
+                    <div class="tooltip-label">Address:</div>
+                    <div class="tooltip-value">${device.address}</div>
+
+                    <div class="tooltip-label">Status:</div>
+                    <div class="tooltip-value">
+                        <span class="connection-indicator ${device.is_connected ? 'connected' : 'disconnected'}"></span>
+                        ${device.is_connected ? 'Connected' : 'Paired'}
+                    </div>
+
+                    <div class="tooltip-label">Distance:</div>
+                    <div class="tooltip-value">${device.distance ? device.distance + 'm' : 'Unknown'}</div>
+
+                    <div class="tooltip-label">Signal:</div>
+                    <div class="tooltip-value" style="color: ${device.signal_quality.color}">
+                        ${device.signal_quality.level}
+                    </div>
+
+                    <div class="tooltip-label">RSSI:</div>
+                    <div class="tooltip-value">${device.rssi} dBm</div>
+
+                    <div class="tooltip-label">First Seen:</div>
+                    <div class="tooltip-value">${new Date(device.first_seen).toLocaleTimeString()}</div>
+
+                    <div class="tooltip-label">Last Seen:</div>
+                    <div class="tooltip-value">${new Date(device.last_seen).toLocaleTimeString()}</div>
+                </div>
+            `;
+
+            document.body.appendChild(deviceTooltip);
+        }
+
+        function showDeviceDetails(device) {
+            // You can implement a detailed modal view here
+            showNotification(`Viewing details for ${device.name}`, 'success');
+        }
+
+        async function scanDevices() {
+            try {
+                showNotification('Scanning for Bluetooth devices...', 'warning');
+
+                const response = await fetch('/api/scan');
+                const data = await response.json();
+
+                if (data.success) {
+                    updateRadar(data.devices);
+                    updateSystemInfo(data.system_info);
+                    showNotification(`Found ${data.devices.length} device(s)`, 'success');
+                } else {
+                    showNotification('Scan failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Scan error:', error);
+                showNotification('Scan failed. Check console for details.', 'error');
+            }
+        }
+
+        async function startContinuousScan() {
+            try {
+                const response = await fetch('/api/start_continuous');
+                const data = await response.json();
+
+                if (data.success) {
+                    isScanning = true;
+                    showNotification('Continuous scan started', 'success');
+
+                    // Start polling for updates
+                    startPolling();
+                } else {
+                    showNotification(data.message, 'warning');
+                }
+            } catch (error) {
+                console.error('Start continuous error:', error);
+                showNotification('Failed to start continuous scan', 'error');
+            }
+        }
+
+        async function stopContinuousScan() {
+            try {
+                const response = await fetch('/api/stop_continuous');
+                const data = await response.json();
+
+                if (data.success) {
+                    isScanning = false;
+                    showNotification('Continuous scan stopped', 'success');
+                } else {
+                    showNotification(data.message, 'warning');
+                }
+            } catch (error) {
+                console.error('Stop continuous error:', error);
+                showNotification('Failed to stop continuous scan', 'error');
+            }
+        }
+
+        function startPolling() {
+            if (isScanning) {
+                // Poll every 3 seconds during continuous scan
+                setTimeout(async () => {
+                    if (isScanning) {
+                        await scanDevices();
+                        startPolling();
+                    }
+                }, 3000);
+            }
+        }
+
+        function updateSystemInfo(systemInfo) {
+            const systemStatus = document.getElementById('systemStatus');
+            const totalScans = document.getElementById('totalScans');
+
+            if (systemInfo) {
+                const btEnabled = systemInfo.BluetoothEnabled ? 'Enabled' : 'Disabled';
+                const adapters = systemInfo.Adapters ? systemInfo.Adapters.length : 0;
+                systemStatus.textContent = `Bluetooth: ${btEnabled} | Adapters: ${adapters}`;
+            }
+
+            // Update total scans from status
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        totalScans.textContent = `Scans: ${data.status.total_scans}`;
+                    }
+                })
+                .catch(() => {
+                    totalScans.textContent = 'Scans: --';
+                });
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            // Initial scan
+            setTimeout(scanDevices, 1000);
+
+            // Auto-refresh every 30 seconds if not continuous
+            setInterval(() => {
+                if (!isScanning) {
+                    scanDevices();
+                }
+            }, 30000);
+
+            // Check system status on load
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSystemInfo(data.system_info);
+                        if (data.status.scanning) {
+                            isScanning = true;
+                            startPolling();
+                        }
+                    }
+                });
+        });
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && !isScanning) {
+                scanDevices();
+            }
+        });
+    </script>
+</body>
+</html>
