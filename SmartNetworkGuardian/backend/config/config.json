@@ -1,0 +1,7 @@
+{
+  "application_name": "Smart Network Guardian",
+  "scan_timeout_seconds": 2,
+  "monitoring_interval_seconds": 5,
+  "automatic_scanning_enabled": false,
+  "allowed_network_scope": "private_ipv4_only"
+}
