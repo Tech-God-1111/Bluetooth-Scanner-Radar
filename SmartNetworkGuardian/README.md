@@ -1,27 +1,22 @@
 # Smart Network Guardian
 
-A Windows-oriented local network inventory and monitoring desktop application built with Python and PyQt6.
+A local-first Windows network monitoring web application. The Python backend runs on your PC and the dashboard opens in your browser at http://127.0.0.1:5000.
 
-## Current features
-- Native PyQt6 application launched with `python main.py`.
-- SQLite device inventory, device observations, events and network metrics.
+## Interface
+The dashboard uses the supplied off-white, pale blue-grey, medium blue and deep navy palette. It includes overview, device inventory, website list and report exports.
+
+## Features
+- Local Flask web server; no PyQt desktop window.
+- SQLite device inventory, observations, events and network metrics.
 - Manual ARP discovery on one explicitly selected private IPv4 subnet.
-- Private-subnet and maximum-address-count validation.
-- Device inventory with IP, MAC, hostname, first/last-seen and trust status.
-- Local website blocklist stored in SQLite and mirrored to JSON.
-- Default gateway discovery and DNS health measurement modules.
+- Private-subnet and maximum-address-count validation (4096 addresses).
+- Device inventory and user-managed trust status.
+- Local website domain list stored in SQLite and mirrored to JSON.
+- Gateway discovery and DNS/gateway health check.
 - CSV device inventory and PDF event exports.
-- Router capability boundary that reports unsupported status instead of claiming filtering is active.
+- Router capability boundary: no router settings are changed and no claim of active website filtering is made.
 
-## Limitations
-- Scapy discovery may require administrator privileges and a compatible packet capture driver on Windows.
-- ARP discovery only sees devices that respond; it cannot prove silent devices are offline.
-- Vendor enrichment, continuous monitoring UI, automatic scheduling and verified router adapters are not enabled in this initial release.
-- A local blocklist does not block websites by itself.
-- No router settings are changed.
-- No ESP32 data is simulated.
-
-## Install (Windows 11)
+## Windows installation
 1. Install Python 3.11+.
 2. Open PowerShell in this directory.
 3. Run:
@@ -34,13 +29,16 @@ A Windows-oriented local network inventory and monitoring desktop application bu
    python main.py
    ```
 
-4. If Scapy cannot capture packets, install the appropriate Npcap driver and retry with suitable permissions.
+4. Open http://127.0.0.1:5000 in your browser. Keep the terminal open while using the dashboard.
+5. If ARP discovery fails on Windows, install Npcap and run the terminal with appropriate permissions.
 
-## Data
-Application records are stored locally in `data/devices.db` and `data/blocked_sites.json`. Scanning is manual, requires selecting a private IPv4 interface and asks for confirmation. No external network scanning is implemented.
+## Security and limitations
+- The web server binds to 127.0.0.1, so it is accessible only from this PC by default.
+- Scans are manual, require selecting an active interface and confirmation, and are restricted to one private IPv4 subnet.
+- ARP discovery only sees devices that respond; a missing response does not prove a device is offline.
+- The website list is local bookkeeping only. It does not block websites without a separately implemented and verified router/DNS enforcement adapter.
+- No router settings are changed. No internet-wide scans, password attacks, packet injection or traffic interception are implemented.
+- Device vendor enrichment, continuous monitoring, bandwidth measurement, historical charting and ESP32-S3 telemetry are not implemented.
 
 ## Tests
-Run `pytest` from this directory. Keep network and router tests mocked; tests must not change router configuration.
-
-## Roadmap
-Scheduled monitoring, historical graphs, vendor lookup, additional report types, verified router-specific adapters and optional ESP32-S3 telemetry.
+Run pytest from this directory. Network discovery and router operations should be mocked in automated tests.
