@@ -7,7 +7,7 @@
 #network-radar{width:min(100%,390px);height:auto;max-height:390px;overflow:visible}
 .radar-grid circle,.radar-grid path{fill:none;stroke:#a9c4da;stroke-width:1;opacity:.7}
 .radar-grid path{stroke-dasharray:3 5}
-.radar-sweep{transform-origin:210px 210px;opacity:0}
+.radar-sweep{transform-box:view-box;transform-origin:50% 50%;opacity:0}
 #network-radar.is-scanning .radar-sweep{opacity:1;animation:radar-rotate 2.6s linear infinite}
 @keyframes radar-rotate{to{transform:rotate(360deg)}}
 .gateway-marker{fill:#fff;stroke:#315c83;stroke-width:4;filter:url(#glow)}
@@ -18,7 +18,7 @@
 .unknown-marker{fill:#e7a344;filter:url(#glow)}
 .ignored-marker{fill:#8b91a0}
 .marker-core{fill:#fff}
-.radar-empty{position:absolute;pointer-events:none;padding:8px 12px;border-radius:20px;background:#fffde;color:#62788e;font-size:11px}
+.radar-empty{position:absolute;pointer-events:none;padding:8px 12px;border-radius:20px;background:#ffffffde;color:#62788e;font-size:11px}
 .radar-empty[hidden]{display:none}
 .radar-legend{display:flex;gap:16px;flex-wrap:wrap;padding:14px 2px 5px;color:var(--muted);font-size:10px}
 .legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
