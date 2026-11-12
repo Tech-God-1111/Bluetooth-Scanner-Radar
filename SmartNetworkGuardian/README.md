@@ -42,3 +42,11 @@ The dashboard uses the supplied off-white, pale blue-grey, medium blue and deep 
 
 ## Tests
 Run pytest from this directory. Network discovery and router operations should be mocked in automated tests.
+
+## Radar dashboard and Wi-Fi telemetry
+- The overview includes an animated discovery radar that plots devices returned by the existing manual ARP scan.
+- Marker positions are deterministic visual placements only. Rings and marker positions do not represent physical distance, direction, or a floor plan.
+- The Wi-Fi panel reads the current Windows PC-to-access-point connection using `netsh wlan show interfaces`: SSID, BSSID, signal percentage, channel, radio type, and reported link rates when available.
+- Signal history is sampled in memory while the dashboard is open; it is not a persistent long-term measurement history.
+- The Wi-Fi signal belongs to this PC's connection. It is not the RSSI of other LAN devices and is never converted into per-device distance.
+- Individual device proximity requires an authorized source of per-client radio measurements (for example, supported router telemetry or compatible receiver hardware). This build does not claim to provide that.
